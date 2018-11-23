@@ -1,12 +1,12 @@
 class Rectangle {
 
-    constructor(x, y, width = 150, height = 80, color = "#800080", isDragging = false) {
+    constructor(x, y, width = 150, height = 80, color = "#800080") {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.color = color;
-        this.collided = isDragging;
+        this.collided = false;
         this.startCoordinates = {x: x, y: y};
         this.stickySide = null;
         this.stickedTo = null;

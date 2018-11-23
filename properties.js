@@ -35,4 +35,4 @@ const rectanglesList = [
     },
 ];
 
-const N = 50;
+const N = 10;
