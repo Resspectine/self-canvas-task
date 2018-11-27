@@ -35,4 +35,4 @@ const rectanglesList = [
     },
 ];
 
-const N = 10;
+const STICKY_MARGIN = 20;

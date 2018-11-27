@@ -12,109 +12,103 @@ class Rectangle {
         this.stickedTo = null;
     }
 
-    findDistance(first, second, firstCenter, secondCenter, deviation, greater) {
+    isEnoughDistance(first, second, firstCenter, secondCenter, deviation = 0, greater = false) {
         let distance = (first / 2 + second / 2 + deviation);
         let currentDistance = Math.abs(firstCenter - secondCenter);
         return greater ? currentDistance > distance : currentDistance < distance;
     }
 
+    isEnoughDistanceGreater(first, second, firstCenter, secondCenter, deviation) {
+        return this.isEnoughDistance(first, second, firstCenter, secondCenter, deviation, true);
+    }
+
+    isEnoughDistanceLower(first, second, firstCenter, secondCenter, deviation) {
+        return this.isEnoughDistance(first, second, firstCenter, secondCenter, deviation);
+    }
+
+    getCenter(rect) {
+        return [rect.x + rect.width / 2, rect.y + rect.height / 2];
+    }
+
     checkCollision(first, second) {
-        let firstCenterX = first.x + first.width / 2;
-        let firstCenterY = first.y + first.height / 2;
-        let secondCenterX = second.x + second.width / 2;
-        let secondCenterY = second.y + second.height / 2;
-        let collideX = this.findDistance(first.width, second.width, firstCenterX, secondCenterX, 0, false);
-        let collideY = this.findDistance(first.height, second.height, firstCenterY, secondCenterY, 0, false);
+        let [firstCenterX, firstCenterY] = this.getCenter(first);
+        let [secondCenterX, secondCenterY] = this.getCenter(second);
+        let collideX = this.isEnoughDistanceLower(first.width, second.width, firstCenterX, secondCenterX);
+        let collideY = this.isEnoughDistanceLower(first.height, second.height, firstCenterY, secondCenterY);
         return collideX && collideY;
     }
 
     checkSticky(first, second) {
-        let firstCenterX = first.x + first.width / 2;
-        let firstCenterY = first.y + first.height / 2;
-        let secondCenterX = second.x + second.width / 2;
-        let secondCenterY = second.y + second.height / 2;
-        let stickyX = this.findDistance(first.width, second.width, firstCenterX, secondCenterX, N, false);
-        let stickyY = this.findDistance(first.height, second.height, firstCenterY, secondCenterY, N, false);
-        let collideX = this.findDistance(first.width, second.width, firstCenterX, secondCenterX, 0, true);
-        let collideY = this.findDistance(first.height, second.height, firstCenterY, secondCenterY, 0, true);
-        if ((firstCenterY < secondCenterY) && stickyX && stickyY && collideY) {
-            return 1;
+        let [firstCenterX, firstCenterY] = this.getCenter(first);
+        let [secondCenterX, secondCenterY] = this.getCenter(second);
+        let stickyX = this.isEnoughDistanceLower(first.width, second.width, firstCenterX, secondCenterX, STICKY_MARGIN);
+        let stickyY = this.isEnoughDistanceLower(first.height, second.height, firstCenterY, secondCenterY, STICKY_MARGIN);
+        if (!stickyX || !stickyY) {
+            return null;
         }
-        if ((firstCenterX > secondCenterX) && stickyX && stickyY && collideX) {
-            return 2;
+        let collideX = this.isEnoughDistanceGreater(first.width, second.width, firstCenterX, secondCenterX);
+        let collideY = this.isEnoughDistanceGreater(first.height, second.height, firstCenterY, secondCenterY);
+        if ((firstCenterY < secondCenterY) && collideY) {
+            return 'top';
         }
-        if ((firstCenterY > secondCenterY) && stickyX && stickyY && collideY) {
-            return 3;
+        if ((firstCenterX > secondCenterX) && collideX) {
+            return 'right';
         }
-        if ((firstCenterX < secondCenterX) && stickyX && stickyY && collideX) {
-            return 4;
+        if ((firstCenterY > secondCenterY) && collideY) {
+            return 'bottom';
         }
-        return false;
+        if ((firstCenterX < secondCenterX) && collideX) {
+            return 'left';
+        }
+        return null;
     }
 
-    isSticky(rect) {
-        if (!this.stickedTo) {
-            switch (this.checkSticky(this, rect)) {
-                case 1:
-                    this.stickySide = 1;
-                    this.stickedTo = rect;
-                    break;
-                case 2:
-                    this.stickySide = 2;
-                    this.stickedTo = rect;
-                    break;
-                case 3:
-                    this.stickySide = 3;
-                    this.stickedTo = rect;
-                    break;
-                case 4:
-                    this.stickySide = 4;
-                    this.stickedTo = rect;
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            if (this.stickedTo === rect) {
-                if (!this.checkSticky(this, rect)) {
-                    this.stickedTo = null;
-                    this.stickySide = null;
+    doStickyWith(rect) {
+        const stickySide = this.checkSticky(this, rect);
+        if (!this.stickedTo && stickySide) {
+            this.stickySide = stickySide;
+            this.stickedTo = rect;
+        } else if (this.stickedTo === rect && !stickySide) {
+            this.stickedTo = null;
+            this.stickySide = null;
+        }
 
-                }
-            }
+        this.isStuck();
+    }
+
+    isCollided() {
+        return this.collided;
+    }
+
+    isCollidedWith(rect) {
+        if (rect && rect !== this) {
+            return this.checkCollision(this, rect);
         }
     }
 
-    isCollided(rect) {
-        if (rect !== this) {
-            if (rect) {
-                return this.checkCollision(this, rect);
-            } else {
-                return this.collided;
-            }
-        }
-    }
-
-    draw(context) {
-        context.beginPath();
+    isStuck() {
         if (this.stickedTo) {
             switch (this.stickySide) {
-                case 1:
+                case 'top':
                     this.y = this.stickedTo.y - this.height;
                     break;
-                case 2:
+                case 'right':
                     this.x = this.stickedTo.x + this.stickedTo.width;
                     break;
-                case 3:
+                case 'bottom':
                     this.y = this.stickedTo.y + this.stickedTo.height;
                     break;
-                case 4:
+                case 'left':
                     this.x = this.stickedTo.x - this.width;
                     break;
                 default:
                     break;
             }
         }
+    }
+
+    draw(context) {
+        context.beginPath();
         context.rect(this.x, this.y, this.width, this.height);
         context.closePath();
         context.fillStyle = this.collided ? '#ff0000' : this.color;
